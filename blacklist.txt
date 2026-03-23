@@ -1,0 +1,122 @@
+# Patent boilerplate blacklist
+# ─────────────────────────────
+# One phrase per line (case-insensitive exact match after normalization).
+# Lines starting with '#' are comments.
+# Add, remove, or comment out entries freely.
+#
+# IMPORTANT: only exact-match phrases are suppressed.
+# Generic heads (e.g. "system") are listed here so they are dropped when
+# they appear ALONE, but informative compounds like "battery management system"
+# will NOT be affected.
+
+# ── Generic patent boilerplate ───────────────────────────────────────────────
+present invention
+invention
+embodiment
+exemplary embodiment
+preferred embodiment
+various embodiments
+embodiments of the invention
+certain embodiments
+some embodiments
+one embodiment
+another embodiment
+described embodiment
+particular embodiment
+above embodiment
+above-described embodiment
+specific embodiment
+
+# ── Disclosure / document structure ─────────────────────────────────────────
+disclosure
+present disclosure
+specification
+description
+claim
+claims
+invention disclosure
+summary
+background
+detailed description
+brief description
+field of invention
+field of the invention
+scope
+scope of the invention
+
+# ── Standalone generic functional heads ─────────────────────────────────────
+# (These are only blocked when appearing alone; compounds are safe.)
+method
+apparatus
+system
+device
+implementation
+configuration
+arrangement
+assembly
+component
+element
+feature
+aspect
+function
+operation
+procedure
+process
+technique
+approach
+scheme
+mechanism
+module
+unit
+part
+means
+structure
+form
+type
+kind
+variant
+version
+example
+instance
+application
+solution
+step
+steps
+
+# ── Generic quantifiers / determiners that survive trimming ──────────────────
+plurality
+number
+set
+kind
+case
+way
+manner
+
+# ── Common patent-prose filler phrases ───────────────────────────────────────
+according to the invention
+according to the present invention
+according to an embodiment
+in one embodiment
+in another embodiment
+in some embodiments
+in certain embodiments
+for example
+for instance
+such as
+in particular
+in general
+as described
+as disclosed
+as described herein
+as disclosed herein
+described herein
+disclosed herein
+the present
+the invention
+the disclosure
+the embodiment
+the method
+the apparatus
+the system
+the device
+the process

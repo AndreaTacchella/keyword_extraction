@@ -1,0 +1,73 @@
+{
+    "_comment": "Candidate extraction config for English patent keyword extraction baseline.",
+
+    "spacy_model": "en_core_web_sm",
+    "language": "en",
+
+    "batch_size": 64,
+
+    "candidate_length": {
+        "_comment": "Token count bounds. max=4 is a practical default for technical phrases.",
+        "max_candidate_length": 4,
+        "min_candidate_length": 1
+    },
+
+    "max_candidate_length": 4,
+    "min_candidate_length": 1,
+
+    "span_sources": {
+        "_comment": "Toggle candidate generation strategies independently.",
+        "use_noun_chunks": true,
+        "use_dependency_phrases": true,
+        "use_ngram_backoff": true
+    },
+
+    "use_noun_chunks": true,
+    "use_dependency_phrases": true,
+    "use_ngram_backoff": true,
+
+    "ngrams": {
+        "_comment": "Active only when use_ngram_backoff=true. Keep ngram_max <= max_candidate_length.",
+        "ngram_min": 2,
+        "ngram_max": 3
+    },
+
+    "ngram_min": 2,
+    "ngram_max": 3,
+
+    "normalization": {
+        "_comment": "normalization_mode: 'conservative' (lowercase only) or 'lemma' (NOUN+ADJ lemmatization). Lemmatization requires apply_light_lemmatization=true.",
+        "normalization_mode": "conservative",
+        "lowercase": true,
+        "apply_light_lemmatization": false,
+        "trim_stopword_edges": true
+    },
+
+    "normalization_mode": "conservative",
+    "lowercase": true,
+    "apply_light_lemmatization": false,
+    "trim_stopword_edges": true,
+
+    "output": {
+        "_comment": "keep_duplicates=true retains multiple occurrences of the same candidate within a section (useful for frequency counting later). Set false to deduplicate within (row, section).",
+        "keep_duplicates": true
+    },
+
+    "keep_duplicates": true,
+
+    "blacklist": {
+        "_comment": "Path to the blacklist file. Exact normalized-form matching only. Edit blacklist.txt to add/remove entries.",
+        "blacklist_path": "blacklist.txt"
+    },
+
+    "blacklist_path": "blacklist.txt",
+
+    "section_weights": {
+        "_comment": "Stored for future ranking stage. Not used by extraction. title_weight > 1 signals higher prior importance.",
+        "title_weight": 2.0,
+        "abstract_weight": 1.0
+    },
+
+    "title_weight": 2.0,
+    "abstract_weight": 1.0
+}
