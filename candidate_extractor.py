@@ -87,19 +87,11 @@ def save_outputs(
 
     # Assign a stable integer id to each unique normalized candidate,
     # in order of first appearance in candidates_df.
-    # extraction_source is aggregated across all rows (union of sources).
-    source_union = (
-        candidates_df.groupby("candidate")["extraction_source"]
-        .apply(lambda vals: "|".join(sorted({s for v in vals for s in v.split("|")})))
-        .reset_index()
-        .rename(columns={"extraction_source": "extraction_source_all"})
-    )
+    # extraction_source is taken from the first occurrence (fast path).
     unique_candidates = (
-        candidates_df[["candidate", "surface_form"]]
+        candidates_df[["candidate", "surface_form", "extraction_source"]]
         .drop_duplicates(subset="candidate", keep="first")
         .reset_index(drop=True)
-        .merge(source_union, on="candidate")
-        .rename(columns={"extraction_source_all": "extraction_source"})
     )
     unique_candidates.index.name = "candidate_id"
     unique_candidates = unique_candidates.reset_index()  # candidate_id becomes a column
@@ -181,6 +173,12 @@ class CandidateExtractor:
     def __init__(self, config_path: str):
         self.cfg = load_config(config_path)
         self.nlp = spacy.load(self.cfg["spacy_model"])
+        # Disable unused pipeline components to reduce per-doc overhead.
+        # NER is never used; lemmatizer is only needed when apply_light_lemmatization=true.
+        to_disable = ["ner"]
+        if not self.cfg.get("apply_light_lemmatization", False):
+            to_disable.append("lemmatizer")
+        self.nlp.select_pipes(disable=to_disable)
         self.blacklist = load_blacklist(self.cfg.get("blacklist_path", "blacklist.txt"))
         self._ws_re = re.compile(r"\s+")
 
@@ -239,8 +237,7 @@ class CandidateExtractor:
 
         # Collect non-empty (index, text) pairs
         pairs = []
-        for idx, row in df.iterrows():
-            text = row.get(section)
+        for idx, text in zip(df.index, df[section].tolist()):
             if pd.isna(text) or not str(text).strip():
                 continue
             pairs.append((idx, str(text).strip()))
@@ -251,8 +248,9 @@ class CandidateExtractor:
         row_ids = [p[0] for p in pairs]
         texts   = [p[1] for p in pairs]
 
+        n_process = self.cfg.get("n_process", 1)
         records = []
-        for row_id, doc in zip(row_ids, self.nlp.pipe(texts, batch_size=batch_size)):
+        for row_id, doc in zip(row_ids, self.nlp.pipe(texts, batch_size=batch_size, n_process=n_process)):
             for surface, candidate, extraction_source in self._extract_from_doc(doc):
                 records.append(
                     {
@@ -426,22 +424,27 @@ class CandidateExtractor:
         max_len = cfg.get("max_candidate_length", 4)
         min_len = cfg.get("min_candidate_length", 1)
 
-        if not (min_len <= len(tokens) <= max_len):
-            return False
-
+        # NOUN/PROPN check first — eliminates ~60% of spans immediately
         if not any(t.pos_ in ("NOUN", "PROPN") for t in tokens):
             return False
 
-        if any(t.is_punct or t.pos_ in ("PUNCT", "SPACE") for t in tokens):
+        # Length bounds — O(1)
+        if not (min_len <= len(tokens) <= max_len):
             return False
 
-        if all(t.like_num or t.is_digit for t in tokens):
-            return False
-
+        # Boundary stopword/DET — O(1)
         if tokens[0].is_stop or tokens[0].pos_ == "DET":
             return False
 
         if tokens[-1].is_stop or tokens[-1].pos_ == "DET":
+            return False
+
+        # Internal punctuation — O(n)
+        if any(t.is_punct or t.pos_ in ("PUNCT", "SPACE") for t in tokens):
+            return False
+
+        # Purely numeric — O(n), rare
+        if all(t.like_num or t.is_digit for t in tokens):
             return False
 
         return True

@@ -1,14 +1,16 @@
 {
     "spacy_model": "en_core_web_sm",
     "language": "en",
-    "batch_size": 64,
+    "batch_size": 256,
 
     "max_candidate_length": 4,
     "min_candidate_length": 1,
 
     "use_noun_chunks": true,
     "use_dependency_phrases": true,
-    "use_ngram_backoff": true,
+
+    "_comment_ngram": "use_ngram_backoff generates ~66x more spans than noun_chunks per doc and tends to add noise. Set to true only for recall experiments.",
+    "use_ngram_backoff": false,
     "ngram_min": 2,
     "ngram_max": 3,
 
@@ -22,6 +24,9 @@
     "keep_duplicates": true,
 
     "blacklist_path": "blacklist.txt",
+
+    "_comment_multiprocessing": "n_process > 1 enables spaCy multiprocessing. On macOS use n_process=1 inside scripts not guarded by 'if __name__ == __main__'. Set to 4 for production batch runs.",
+    "n_process": 4,
 
     "_comment_weights": "Stored for future ranking stage only, not used during extraction.",
     "title_weight": 2.0,
