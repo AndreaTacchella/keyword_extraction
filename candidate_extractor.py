@@ -114,7 +114,8 @@ def save_outputs(
     # ── File 2: occurrence mapping (indexes only) ────────────────────────────
     mapping = candidates_df[["candidate", "row_id"]].copy()
     mapping["candidate_id"] = mapping["candidate"].map(id_lookup)
-    mapping = mapping[["candidate_id", "row_id"]].astype(int)
+    mapping = mapping[["candidate_id", "row_id"]]
+    mapping["candidate_id"] = mapping["candidate_id"].astype(int)
     mapping_path = out / mapping_filename
     mapping.to_csv(mapping_path, index=False)
 
@@ -480,3 +481,108 @@ class CandidateExtractor:
             text = text.lower()
 
         return text
+
+    # ------------------------------------------------------------------
+    # Debugging
+    # ------------------------------------------------------------------
+
+    def debug_text(self, text: str) -> None:
+        """
+        Trace the full extraction pipeline for a single text string.
+
+        Prints, for every candidate span attempted:
+          - the raw span text
+          - which source produced it (noun_chunk / dep_phrase / ngram)
+          - the POS tag and dependency label of each token
+          - the outcome: KEPT, or the reason it was dropped
+
+        Useful for diagnosing why an expected phrase is absent from results.
+
+        Parameters
+        ----------
+        text : str
+            A single title or abstract string.
+        """
+        doc = self.nlp(text)
+
+        print(f"\n{'─'*70}")
+        print(f"TEXT: {text}")
+        print(f"{'─'*70}")
+        print("TOKEN-LEVEL PARSE:")
+        print(f"  {'token':<20} {'POS':<8} {'DEP':<12} {'stop'}")
+        print(f"  {'─'*20} {'─'*8} {'─'*12} {'─'*5}")
+        for t in doc:
+            print(f"  {t.text:<20} {t.pos_:<8} {t.dep_:<12} {t.is_stop}")
+
+        tagged_spans = []
+        if self.cfg.get("use_noun_chunks", True):
+            for span in doc.noun_chunks:
+                tagged_spans.append((span, "noun_chunk"))
+        if self.cfg.get("use_dependency_phrases", True):
+            for span in self._dependency_phrases(doc):
+                tagged_spans.append((span, "dep_phrase"))
+        if self.cfg.get("use_ngram_backoff", True):
+            for span in self._ngram_spans(doc):
+                tagged_spans.append((span, "ngram"))
+
+        print(f"\nSPAN PIPELINE ({len(tagged_spans)} raw spans):")
+        print(f"  {'span':<30} {'source':<12} outcome")
+        print(f"  {'─'*30} {'─'*12} {'─'*40}")
+
+        seen: dict = {}
+        for span, tag in tagged_spans:
+            raw_text = span.text.strip()
+            tokens = self._trim_edges(list(span))
+
+            if not tokens:
+                print(f"  {raw_text:<30} {tag:<12} DROPPED — empty after edge trimming")
+                continue
+
+            trimmed_text = " ".join(t.text for t in tokens)
+
+            if not self._passes_filter(tokens):
+                # Report the specific reason
+                cfg = self.cfg
+                max_len = cfg.get("max_candidate_length", 4)
+                min_len = cfg.get("min_candidate_length", 1)
+                if not (min_len <= len(tokens) <= max_len):
+                    reason = f"DROPPED — length {len(tokens)} outside [{min_len}, {max_len}]"
+                elif not any(t.pos_ in ("NOUN", "PROPN") for t in tokens):
+                    reason = "DROPPED — no NOUN/PROPN"
+                elif any(t.is_punct or t.pos_ in ("PUNCT", "SPACE") for t in tokens):
+                    reason = "DROPPED — contains punctuation"
+                elif all(t.like_num or t.is_digit for t in tokens):
+                    reason = "DROPPED — purely numeric"
+                elif tokens[0].is_stop or tokens[0].pos_ == "DET":
+                    reason = f"DROPPED — starts with stopword/DET '{tokens[0].text}'"
+                elif tokens[-1].is_stop or tokens[-1].pos_ == "DET":
+                    reason = f"DROPPED — ends with stopword/DET '{tokens[-1].text}'"
+                else:
+                    reason = "DROPPED — failed filter (unknown reason)"
+                display = raw_text if raw_text == trimmed_text else f"{raw_text} → '{trimmed_text}'"
+                print(f"  {display:<30} {tag:<12} {reason}")
+                continue
+
+            normalized = self._normalize(tokens)
+
+            if not normalized:
+                print(f"  {raw_text:<30} {tag:<12} DROPPED — empty after normalization")
+                continue
+
+            if normalized in self.blacklist:
+                print(f"  {raw_text:<30} {tag:<12} DROPPED — blacklisted ('{normalized}')")
+                continue
+
+            if normalized in seen:
+                existing_tag = seen[normalized][1]
+                print(f"  {raw_text:<30} {tag:<12} DUPLICATE of '{normalized}' (already from {existing_tag})")
+                seen[normalized][1].add(tag)
+                continue
+
+            seen[normalized] = [trimmed_text, {tag}]
+            display = raw_text if raw_text == trimmed_text else f"{raw_text} → '{trimmed_text}'"
+            print(f"  {display:<30} {tag:<12} KEPT → '{normalized}'")
+
+        print(f"\nFINAL CANDIDATES ({len(seen)}):")
+        for normalized, (surface, sources) in seen.items():
+            print(f"  [{('|'.join(sorted(sources))):<25}]  {normalized}")
