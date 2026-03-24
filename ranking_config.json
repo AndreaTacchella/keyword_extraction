@@ -1,0 +1,44 @@
+{
+    "_comment": "Ranking stage config. See RANKING.md for full documentation.",
+
+    "data_path": "data/df_batt.parquet",
+    "id_column": "APPLN_ID",
+    "title_column": "APPLN_TITLE",
+    "abstract_column": "APPLN_ABSTR",
+
+    "candidates_list_path": "outputs/candidates_list.csv",
+    "candidates_mapping_path": "outputs/candidates_mapping.csv",
+
+    "_comment_col_maps": "Override these if your extractor output uses different column names.",
+    "candidates_list_columns": {
+        "candidate_id": "candidate_id",
+        "candidate": "candidate",
+        "surface_form": "surface_form",
+        "extraction_source": "extraction_source"
+    },
+    "candidates_mapping_columns": {
+        "candidate_id": "candidate_id",
+        "row_id": "row_id"
+    },
+
+    "_comment_formatting": "mode: 'cls_sep' (default) or 'plain'. cls_sep uses literal special tokens as section boundary markers.",
+    "text_formatting": {
+        "mode": "cls_sep",
+        "cls_token": "[CLS]",
+        "sep_token": "[SEP]"
+    },
+
+    "_comment_semantic": "model_name: any sentence-transformers model. all-MiniLM-L6-v2 is 22M params, 384-dim, fast on CPU/Apple Silicon. Max input: 256 tokens (longer abstracts are silently truncated).",
+    "semantic": {
+        "backend": "sentence_transformers",
+        "model_name": "all-MiniLM-L6-v2",
+        "batch_size": 64
+    },
+
+    "_comment_tfidf": "smoothed_idf uses sklearn formula: log((N+1)/(df+1))+1. N = distinct row_ids with candidates.",
+    "tfidf": {
+        "smoothed_idf": true
+    },
+
+    "output_path": "outputs/ranked_candidates.csv"
+}
