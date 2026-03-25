@@ -45,6 +45,7 @@
     "_comment_clustering": "semantic_threshold: cosine similarity cutoff for merging candidates. 0.85 targets near-synonyms; lower → broader clusters. spacy_model must have lemmatizer enabled.",
     "clustering": {
         "semantic_threshold": 0.92,
+        "max_block_size": 2000,
         "spacy_model": "en_core_web_sm",
         "batch_size": 64,
         "output_path": "outputs/candidate_clusters.csv"

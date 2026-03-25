@@ -56,9 +56,10 @@ if __name__ == "__main__":
     )
 
     # ── Run clustering ────────────────────────────────────────────────────────
-    threshold  = clust_cfg.get("semantic_threshold", 0.85)
-    batch_size = clust_cfg.get("batch_size", 64)
-    print(f"\nRunning clustering (semantic_threshold={threshold}) ...")
+    threshold      = clust_cfg.get("semantic_threshold", 0.92)
+    max_block_size = clust_cfg.get("max_block_size", 2000)
+    batch_size     = clust_cfg.get("batch_size", 64)
+    print(f"\nRunning clustering (threshold={threshold}, max_block_size={max_block_size}) ...")
 
     t0 = time.time()
     clustered = cluster_candidates(
@@ -66,6 +67,7 @@ if __name__ == "__main__":
         embedder=embedder,
         nlp=nlp,
         semantic_threshold=threshold,
+        max_block_size=max_block_size,
         batch_size=batch_size,
     )
     elapsed = time.time() - t0

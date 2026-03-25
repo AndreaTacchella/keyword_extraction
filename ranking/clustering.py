@@ -97,8 +97,8 @@ def build_morphological_clusters(
     candidate_to_cluster: dict = {}
     next_id = 0
 
-    for cand in candidates:
-        lemma = _lemmatize(cand, nlp)
+    for cand, doc in zip(candidates, nlp.pipe(candidates, batch_size=256)):
+        lemma = " ".join(tok.lemma_.lower() for tok in doc)
         if lemma not in lemma_to_cluster:
             lemma_to_cluster[lemma] = next_id
             next_id += 1
@@ -141,6 +141,7 @@ def build_semantic_clusters(
     candidates: list,
     embeddings: np.ndarray,
     threshold: float = 0.85,
+    max_block_size: int = 2000,
 ) -> dict:
     """
     Cluster candidates by semantic similarity using first-token blocking.
@@ -189,6 +190,12 @@ def build_semantic_clusters(
 
     for first_tok, idxs in blocks.items():
         if len(idxs) < 2:
+            continue
+        if len(idxs) > max_block_size:
+            logger.debug(
+                "Skipping block '%s' (%d candidates > max_block_size=%d)",
+                first_tok, len(idxs), max_block_size,
+            )
             continue
         block_embs = embeddings[idxs]            # (b, dim)
         sim = block_embs @ block_embs.T          # (b, b) cosine similarity
@@ -330,6 +337,7 @@ def cluster_candidates(
     embedder: EmbedderBase,
     nlp,
     semantic_threshold: float = 0.85,
+    max_block_size: int = 2000,
     batch_size: int = 64,
 ) -> pd.DataFrame:
     """
@@ -365,7 +373,7 @@ def cluster_candidates(
 
     # Stage 2: semantic
     embeddings = embed_candidates(candidates, embedder, batch_size=batch_size)
-    sem_map    = build_semantic_clusters(candidates, embeddings, threshold=semantic_threshold)
+    sem_map    = build_semantic_clusters(candidates, embeddings, threshold=semantic_threshold, max_block_size=max_block_size)
 
     # Merge
     final_map  = merge_cluster_maps(candidates, morph_map, sem_map)
