@@ -1,6 +1,7 @@
 """ranking — unsupervised keyword candidate ranking for patent text."""
 
 from .ranker import CandidateRanker
+from .clustering import cluster_candidates, embed_candidates
 from .loader import load_candidates_list, load_candidates_mapping, load_source_dataframe
 from .canonical import build_canonical_table
 from .formatting import format_documents, get_formatter
@@ -10,6 +11,8 @@ from .semantic import compute_semantic_scores
 
 __all__ = [
     "CandidateRanker",
+    "cluster_candidates",
+    "embed_candidates",
     "load_candidates_list",
     "load_candidates_mapping",
     "load_source_dataframe",
