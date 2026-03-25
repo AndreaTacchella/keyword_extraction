@@ -28,11 +28,13 @@
         "sep_token": "[SEP]"
     },
 
-    "_comment_semantic": "model_name: any sentence-transformers model. all-MiniLM-L6-v2 is 22M params, 384-dim, fast on CPU/Apple Silicon. Max input: 256 tokens (longer abstracts are silently truncated).",
+    "_comment_semantic": "model_name: any sentence-transformers model. all-MiniLM-L6-v2 is 22M params, 384-dim, fast on CPU/Apple Silicon. Max input: 256 tokens (longer abstracts are silently truncated). doc_chunk_size: number of unique documents per chunk; enables checkpoint/resume (required for 10M+ docs). Set to null to disable chunking (loads all doc embeddings into RAM at once).",
     "semantic": {
         "backend": "sentence_transformers",
         "model_name": "all-MiniLM-L6-v2",
-        "batch_size": 64
+        "batch_size": 64,
+        "doc_chunk_size": 100000,
+        "checkpoint_dir": "outputs/checkpoints/semantic"
     },
 
     "_comment_tfidf": "smoothed_idf uses sklearn formula: log((N+1)/(df+1))+1. N = distinct row_ids with candidates.",

@@ -42,7 +42,7 @@ from .canonical import build_canonical_table
 from .formatting import format_documents
 from .embedder import get_embedder, EmbedderBase
 from .lexical import compute_tfidf
-from .semantic import compute_semantic_scores
+from .semantic import compute_semantic_scores, compute_semantic_scores_chunked
 
 logger = logging.getLogger(__name__)
 
@@ -159,12 +159,26 @@ class CandidateRanker:
 
         # ── Semantic scoring ──────────────────────────────────────────────────
         sem_cfg = cfg.get("semantic", {})
-        canonical = compute_semantic_scores(
-            canonical,
-            doc_texts,
-            self.embedder,
-            batch_size=sem_cfg.get("batch_size", 64),
-        )
+        doc_chunk_size = sem_cfg.get("doc_chunk_size", None)
+        if doc_chunk_size:
+            checkpoint_dir = sem_cfg.get(
+                "checkpoint_dir", "outputs/checkpoints/semantic"
+            )
+            canonical = compute_semantic_scores_chunked(
+                canonical,
+                doc_texts,
+                self.embedder,
+                batch_size=sem_cfg.get("batch_size", 64),
+                doc_chunk_size=doc_chunk_size,
+                checkpoint_dir=checkpoint_dir,
+            )
+        else:
+            canonical = compute_semantic_scores(
+                canonical,
+                doc_texts,
+                self.embedder,
+                batch_size=sem_cfg.get("batch_size", 64),
+            )
 
         # ── Within-document ranks ─────────────────────────────────────────────
         canonical["rank_tfidf"] = (

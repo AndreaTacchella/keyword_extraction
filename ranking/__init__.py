@@ -7,7 +7,8 @@ from .canonical import build_canonical_table
 from .formatting import format_documents, get_formatter
 from .embedder import EmbedderBase, SentenceTransformerEmbedder, get_embedder
 from .lexical import compute_tfidf
-from .semantic import compute_semantic_scores
+from .semantic import compute_semantic_scores, compute_semantic_scores_chunked
+from .checkpoint import CheckpointManager
 
 __all__ = [
     "CandidateRanker",
@@ -24,4 +25,6 @@ __all__ = [
     "get_embedder",
     "compute_tfidf",
     "compute_semantic_scores",
+    "compute_semantic_scores_chunked",
+    "CheckpointManager",
 ]
