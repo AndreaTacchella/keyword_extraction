@@ -29,6 +29,7 @@ from collections import defaultdict
 
 import numpy as np
 import pandas as pd
+from tqdm import tqdm
 
 from .embedder import EmbedderBase
 
@@ -97,7 +98,7 @@ def build_morphological_clusters(
     candidate_to_cluster: dict = {}
     next_id = 0
 
-    for cand, doc in zip(candidates, nlp.pipe(candidates, batch_size=256)):
+    for cand, doc in tqdm(zip(candidates, nlp.pipe(candidates, batch_size=256)), total=len(candidates), desc="morphological", unit="cand"):
         lemma = " ".join(tok.lemma_.lower() for tok in doc)
         if lemma not in lemma_to_cluster:
             lemma_to_cluster[lemma] = next_id
@@ -188,7 +189,7 @@ def build_semantic_clusters(
         len(blocks), threshold,
     )
 
-    for first_tok, idxs in blocks.items():
+    for first_tok, idxs in tqdm(blocks.items(), desc="semantic blocks", unit="block"):
         if len(idxs) < 2:
             continue
         if len(idxs) > max_block_size:

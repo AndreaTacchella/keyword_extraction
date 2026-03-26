@@ -30,6 +30,8 @@ import logging
 import numpy as np
 import pandas as pd
 
+from tqdm import tqdm
+
 from .embedder import EmbedderBase
 from .checkpoint import CheckpointManager
 
@@ -161,7 +163,7 @@ def compute_semantic_scores_chunked(
             already_done, n_chunks,
         )
 
-    for chunk_idx in range(n_chunks):
+    for chunk_idx in tqdm(range(n_chunks), desc="doc chunks", unit="chunk"):
         chunk_id = f"chunk_{chunk_idx:0{id_width}d}"
 
         if mgr.is_done(chunk_id):

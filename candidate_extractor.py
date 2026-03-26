@@ -250,7 +250,9 @@ class CandidateExtractor:
 
         n_process = self.cfg.get("n_process", 1)
         records = []
-        for row_id, doc in zip(row_ids, self.nlp.pipe(texts, batch_size=batch_size, n_process=n_process)):
+        pipe = self.nlp.pipe(texts, batch_size=batch_size, n_process=n_process)
+        from tqdm import tqdm
+        for row_id, doc in tqdm(zip(row_ids, pipe), total=len(texts), desc=f"spaCy [{section}]", unit="doc"):
             for surface, candidate, extraction_source in self._extract_from_doc(doc):
                 records.append(
                     {
