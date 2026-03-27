@@ -28,6 +28,12 @@
         "sep_token": "[SEP]"
     },
 
+    "_comment_extraction": "extract_chunk_size: number of documents processed per checkpoint (default 5000). Set smaller if RAM is tight. checkpoint_dir: where raw-candidates parquet chunks are stored.",
+    "extraction": {
+        "extract_chunk_size": 5000,
+        "checkpoint_dir": "outputs/checkpoints/extraction"
+    },
+
     "_comment_semantic": "model_name: any sentence-transformers model. all-MiniLM-L6-v2 is 22M params, 384-dim, fast on CPU/Apple Silicon. Max input: 256 tokens (longer abstracts are silently truncated). doc_chunk_size: number of unique documents per chunk; enables checkpoint/resume (required for 10M+ docs). Set to null to disable chunking (loads all doc embeddings into RAM at once).",
     "semantic": {
         "backend": "sentence_transformers",
