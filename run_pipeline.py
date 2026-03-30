@@ -59,6 +59,7 @@ if __name__ == "__main__":
     ranked_path  = Path(rcfg.get("output_path",             "outputs/ranked_candidates.csv"))
     clust_cfg    = rcfg.get("clustering", {})
     clust_path   = Path(clust_cfg.get("output_path",        "outputs/candidate_clusters.csv"))
+    counts_path  = Path(clust_cfg.get("doc_counts_path",   "outputs/cluster_doc_counts.csv"))
 
     # ── Stage 1: Extraction ───────────────────────────────────────────────────
     print("\n" + "=" * 60)
@@ -175,6 +176,34 @@ if __name__ == "__main__":
         print(f"  Singletons         : {(clustered['cluster_size'] == 1).sum():,}")
         print(f"  Multi-member       : {(clustered['cluster_size'] > 1).sum():,} candidates")
         print(f"  candidate_clusters → {clust_path}")
+
+    # ── Stage 4: Cluster document counts ─────────────────────────────────────
+    print("\n" + "=" * 60)
+    print("STAGE 4 — CLUSTER DOCUMENT COUNTS")
+    print("=" * 60)
+
+    if counts_path.exists():
+        print(f"  Output file already exists — skipping.")
+        print(f"  cluster_doc_counts → {counts_path}")
+    else:
+        clusters = pd.read_csv(clust_path)
+        mapping  = pd.read_csv(mapping_path)
+
+        merged = mapping.merge(clusters[["candidate_id", "cluster_id"]], on="candidate_id", how="inner")
+        doc_counts = (
+            merged.groupby("cluster_id")["row_id"]
+            .nunique()
+            .rename("doc_count")
+            .reset_index()
+        )
+        meta   = clusters[["cluster_id", "cluster_label", "cluster_size"]].drop_duplicates("cluster_id")
+        result = meta.merge(doc_counts, on="cluster_id").sort_values("doc_count", ascending=False)
+
+        counts_path.parent.mkdir(parents=True, exist_ok=True)
+        result.to_csv(counts_path, index=False)
+        print(f"  cluster_doc_counts → {counts_path}  ({len(result):,} clusters)")
+        print("\n  Top 10 clusters by document count:")
+        print(result.head(10)[["cluster_label", "cluster_size", "doc_count"]].to_string(index=False))
 
     # ── Done ──────────────────────────────────────────────────────────────────
     print("\n" + "=" * 60)
